@@ -18,6 +18,8 @@ USERS = {
     "admin": "adminpass789"
 }
 
+latest_alert_text = {"message": ""}
+
 @app.route('/api/login', methods=['POST', 'OPTIONS'])
 def login():
     if request.method == 'OPTIONS':
@@ -54,6 +56,27 @@ def login():
         response = jsonify({"error": str(e)})
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
+    
+
+
+@app.route('/api/alert', methods=['POST'])
+def receive_alert():
+    try:
+        data = request.get_json()
+        print("Received alert:", data)
+        message = data.get("text", "")
+        if message:
+            latest_alert_text["message"] = message
+            return jsonify({"status": "Alert received", "message": message}), 200
+        else:
+            return jsonify({"error": "No alert text received"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/alert', methods=['GET'])
+def get_latest_alert():
+    return jsonify(latest_alert_text), 200
+
 
 # (Keep the rest of your /api endpoints the same...)
 
