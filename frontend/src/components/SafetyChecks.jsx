@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  ArrowLeft, 
-  Shield, 
-  Eye, 
-  Mic, 
+import {
+  ArrowLeft,
+  Shield,
+  Eye,
+  Mic,
   MicOff,
   RotateCcw
 } from 'lucide-react';
@@ -13,6 +13,12 @@ const SafetyChecks = ({ onBack }) => {
   const [voiceAlertsEnabled, setVoiceAlertsEnabled] = useState(false);
   const [isRunningCheck, setIsRunningCheck] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+
+  const [essData, setEssData] = useState({
+    engine_on: null,
+    seatbelt_status: '',
+    safety_alert_triggered: null
+  });
 
   const fetchAlert = async () => {
     try {
@@ -23,9 +29,24 @@ const SafetyChecks = ({ onBack }) => {
     }
   };
 
+  const fetchEssData = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/ess');
+      setEssData(res.data);
+    } catch (error) {
+      console.error('Failed to fetch ESS data:', error);
+    }
+  };
+
   useEffect(() => {
     fetchAlert();
-    const interval = setInterval(fetchAlert, 3000); // poll every 3 seconds
+    fetchEssData();
+
+    const interval = setInterval(() => {
+      fetchAlert();
+      fetchEssData();
+    }, 3000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -45,26 +66,26 @@ const SafetyChecks = ({ onBack }) => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <button 
+          <button
             onClick={onBack}
             className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Back to Dashboard</span>
           </button>
-          
+
           <h1 className="text-3xl font-bold text-white">Safety Checks</h1>
-          
+
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={toggleVoiceAlerts}
               className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-white transition-colors"
             >
               {voiceAlertsEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
               <span>Voice Alerts {voiceAlertsEnabled ? 'On' : 'Off'}</span>
             </button>
-            
-            <button 
+
+            <button
               onClick={handleRunCheck}
               disabled={isRunningCheck}
               className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 px-6 py-2 rounded-lg text-white font-semibold transition-colors"
@@ -84,18 +105,38 @@ const SafetyChecks = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Fatigue Detection */}
+        {/* Safety Sections */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Seatbelt Check */}
-          <div className="bg-gray-700 rounded-lg p-6 border-2 border-green-500">
+          <div className={`bg-gray-700 rounded-lg p-6 border-2 ${essData.seatbelt_status === "Fastened" ? 'border-green-500' : 'border-red-500'}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <Shield className="w-6 h-6 text-white" />
                 <h3 className="text-xl font-semibold text-white">Seatbelt Check</h3>
               </div>
-              <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">OK</span>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${essData.seatbelt_status === "Fastened" ? 'bg-green-500' : 'bg-red-500'}`}>
+                {essData.seatbelt_status === "Fastened" ? 'OK' : 'ALERT'}
+              </span>
             </div>
-            <p className="text-gray-300">Seatbelt properly fastened</p>
+            <p className="text-gray-300">
+              {essData.seatbelt_status || 'Seatbelt status unavailable'}
+            </p>
+          </div>
+
+          {/* Engine Status */}
+          <div className={`bg-gray-700 rounded-lg p-6 border-2 ${essData.engine_on ? 'border-green-500' : 'border-red-500'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Shield className="w-6 h-6 text-white" />
+                <h3 className="text-xl font-semibold text-white">Engine Status</h3>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium text-white ${essData.engine_on ? 'bg-green-500' : 'bg-red-500'}`}>
+                {essData.engine_on ? 'ON' : 'OFF'}
+              </span>
+            </div>
+            <p className="text-gray-300">
+              Engine is {essData.engine_on ? 'running' : 'off'}
+            </p>
           </div>
 
           {/* Fatigue Detection */}
