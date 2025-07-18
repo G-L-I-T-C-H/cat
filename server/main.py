@@ -146,6 +146,132 @@ def get_selected_monitor_data():
     print("📤 Sending selected monitor data:", latest_monitor_data, flush=True)
     return jsonify(latest_monitor_data), 200
 
+
+latest_anomaly = {
+    "anomaly": None,
+    "likelihood_percent": 0,
+}
+
+@app.route('/api/anomaly', methods=['POST'])
+def receive_anomaly():
+    global latest_anomaly  # ⬅️ Use global to update shared variable
+
+    try:
+        data = request.get_json(force=True)
+        if not data:
+            return jsonify({"error": "No data received"}), 400
+
+        print("✅ Incoming anomaly data:", data, flush=True)
+
+        required_keys = {"anomaly", "likelihood_percent"}
+        if not required_keys.issubset(data.keys()):
+            missing = required_keys - data.keys()
+            print("❌ Missing keys:", missing, flush=True)
+            return jsonify({"error": f"Missing keys in data: {', '.join(missing)}"}), 400
+
+        # Update only relevant fields
+        latest_anomaly["anomaly"] = data["anomaly"]
+        latest_anomaly["likelihood_percent"] = data["likelihood_percent"]
+
+        print("✅ Updated latest anomaly:", latest_anomaly, flush=True)
+        return jsonify({"message": "Anomaly data received successfully"}), 200
+
+    except Exception as e:
+        print("❌ Error while parsing anomaly data:", e, flush=True)
+        return jsonify({"error": "Invalid data format"}), 400
+
+@app.route('/api/anomaly', methods=['GET'])  # fixed route spelling
+def send_anomaly():
+    print("📤 Sending latest anomaly data:", latest_anomaly, flush=True)
+    return jsonify(latest_anomaly), 200
+
+
+
+latest_proxy_data = {
+    'proximity_distance_m': 0.0,
+    'direction': 'unknown',
+    'danger_level': 'low',
+    'proximity_alert_triggered': False,
+    'message': ''
+}
+
+@app.route('/api/proxy', methods=['POST'])
+def receive_proxy_data():
+    global latest_proxy_data
+
+    try:
+        data = request.get_json(force=True)
+        if not data:
+            return jsonify({"error": "No data received"}), 400
+
+        print("✅ Incoming proxy data:", data, flush=True)
+
+        # Required keys to validate
+        required_keys = latest_proxy_data.keys()
+        for key in required_keys:
+            if key in data:
+                latest_proxy_data[key] = data[key]
+                print(f"🔁 Updated {key}: {latest_proxy_data[key]}", flush=True)
+            else:
+                print(f"⚠️ Missing key: {key} in incoming data", flush=True)
+
+        return jsonify({"message": "Proxy data received and stored successfully."}), 200
+
+    except Exception as e:
+        print("❌ Error while parsing proxy data:", e, flush=True)
+        return jsonify({"error": "Invalid data format"}), 400
+
+
+@app.route('/api/proxy', methods=['GET'])
+def send_proxy_data():
+    print("📤 Sending latest proxy data:", latest_proxy_data, flush=True)
+    return jsonify(latest_proxy_data), 200
+
+
+latest_task_prediction = {
+    "projected_minutes": None,
+    "predicted_task_complexity": None,
+    "temperature": None,
+    "weather": None,
+    "forecast_weather": None,
+    "forecast_temperature": None
+}
+
+@app.route('/api/task/', methods=['POST'])
+def receive_task_data():
+    global latest_task_prediction
+    try:
+        data = request.get_json(force=True)
+        if not data:
+            return jsonify({"error": "No data received"}), 400
+
+        print("📥 Task Data Received:", data, flush=True)
+
+        key_map = {
+            "Predicted Minutes": "projected_minutes",
+            "Predicted Task Complexity": "predicted_task_complexity",
+            "Temperature (°C)": "temperature",
+            "Weather": "weather",
+            "Weather (3hr Forecast)": "forecast_weather",
+            "Temperature (°C, 3hr Forecast)": "forecast_temperature"
+        }
+
+        for incoming_key, internal_key in key_map.items():
+            if incoming_key in data:
+                latest_task_prediction[internal_key] = data[incoming_key]
+                print(f"✅ Updated {internal_key}: {latest_task_prediction[internal_key]}", flush=True)
+
+        return jsonify({"message": "Task data received successfully"}), 200
+
+    except Exception as e:
+        print("❌ Error in /api/task/:", e, flush=True)
+        return jsonify({"error": "Invalid format"}), 400
+
+@app.route('/api/task/', methods=['GET'])
+def send_task_data():
+    print("📤 Sending Task Data:", latest_task_prediction, flush=True)
+    return jsonify(latest_task_prediction), 200
+
 if __name__ == '__main__':
     print("Starting Flask server on http://localhost:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)

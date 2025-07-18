@@ -84,6 +84,88 @@ const Dashboard = ({ onNavigateToTasks, onNavigateToSafety, onNavigateToTraining
   Exhaust_Temperature,
 } = machineParams;
 
+const [anomaly, setAnomaly] = useState({
+    type: null,
+    likelihood: null,
+  });
+
+const fetchAnomalyData = async () => {
+  try {
+   const res = await axios.get("http://localhost:5000/api/anomaly");
+    const data = res.data;
+    if (data && data.anomaly && data.likelihood_percent !== null) {
+      setAnomaly({
+        type: data.anomaly,
+        likelihood: data.likelihood_percent,
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching anomaly data:", error);
+  }
+};
+
+useEffect(() => {
+  fetchAnomalyData(); // Initial fetch
+
+  const interval = setInterval(() => {
+    fetchAnomalyData(); // Fetch every 10 seconds
+  }, 1000);
+
+  return () => clearInterval(interval); // Cleanup on unmount
+}, []);
+
+
+const [proximityData, setProximityData] = useState({
+    message: '',
+    proximity_distance_m: 0.0,
+    direction: '',
+    danger_level: '',
+    proximity_alert_triggered: false
+  });
+
+  useEffect(() => {
+    const fetchProximityData = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/proxy');
+        const data = await response.json();
+        console.log("📥 Proximity Data Received:", data);
+        setProximityData(data);
+      } catch (error) {
+        console.error("❌ Failed to fetch proximity data:", error);
+      }
+    };
+
+    const interval = setInterval(fetchProximityData, 2000); // update every 2s
+    return () => clearInterval(interval);
+  }, []);
+
+  const [taskData, setTaskData] = useState({
+    projected_minutes: '',
+    predicted_task_complexity: '',
+    temperature: '',
+    weather: '',
+    forecast_weather: '',
+    forecast_temperature: ''
+  });
+
+  useEffect(() => {
+    const fetchTaskData = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/task/');
+        const data = await response.json();
+        console.log("📥 Received Task Data:", data);
+        setTaskData(data);
+      } catch (error) {
+        console.error("❌ Error fetching task data:", error);
+      }
+    };
+
+    fetchTaskData(); // fetch on first mount
+    const interval = setInterval(fetchTaskData, 3000); // fetch every 3s
+
+    return () => clearInterval(interval); // cleanup on unmount
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-800 p-4">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -185,30 +267,30 @@ const Dashboard = ({ onNavigateToTasks, onNavigateToSafety, onNavigateToTraining
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-blue-400" />
-                <h2 className="text-xl font-semibold text-white">Task Overview</h2>
+                <h2 className="text-xl font-semibold text-white">{taskData.projected_minutes}</h2>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </div>
 
             <div className="text-center mb-6">
-              <div className="text-4xl font-bold text-blue-400 mb-2">5</div>
-              <div className="text-gray-300">Total Tasks Today</div>
+              <div className="text-4xl font-bold text-blue-400 mb-2">{taskData.predicted_task_complexity}</div>
+              <div className="text-gray-300">Predicted Tsak Complexity</div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-400 mb-1">2</div>
-                <div className="text-gray-300 text-sm">Completed</div>
+                <div className="text-2xl font-bold text-green-400 mb-1">{taskData.temperature}</div>
+                <div className="text-gray-300 text-sm">Temperature</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-400 mb-1">3</div>
-                <div className="text-gray-300 text-sm">Pending</div>
+                <div className="text-2xl font-bold text-orange-400 mb-1">{taskData.weather}</div>
+                <div className="text-gray-300 text-sm">Weather</div>
               </div>
             </div>
 
             <div className="bg-gray-600 rounded-lg p-4">
-              <div className="text-blue-400 font-medium mb-1">Next Task:</div>
-              <div className="text-white">Load materials at 2:30 PM</div>
+              <div className="text-blue-400 font-medium mb-1">forecast_weather: {taskData.forecast_weather}</div>
+              <div className="text-white">forecast_temperature : {taskData.forecast_temperature}</div>
             </div>
           </div>
 
@@ -230,7 +312,7 @@ const Dashboard = ({ onNavigateToTasks, onNavigateToSafety, onNavigateToTraining
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 items-center">
               <div className="flex justify-between items-center">
                 <span className="text-gray-300">Seatbelt Status</span>
                 <span className="text-green-400 font-medium">FASTENED</span>
@@ -242,6 +324,20 @@ const Dashboard = ({ onNavigateToTasks, onNavigateToSafety, onNavigateToTraining
               <div className="text-center text-gray-400 text-sm mt-4">
                 Last check: {currentTime}
               </div>
+
+                <div className="bg-red-700 text-white rounded-xl p-4 w-fit shadow-lg mt-4">
+  <div className="text-sm uppercase font-semibold tracking-wide mb-1">Anomaly Type</div>
+  <div className="text-lg font-bold mb-2">
+    {anomaly.type ? anomaly.type : "No anomaly"}
+  </div>
+  <div className="text-sm uppercase font-semibold tracking-wide mb-1">Likelihood</div>
+  <div className="text-xl font-bold">
+    {anomaly.likelihood !== null ? `${anomaly.likelihood}%` : "N/A"}
+  </div>
+</div>
+
+
+             
             </div>
           </div>
         </div>
@@ -279,23 +375,38 @@ const Dashboard = ({ onNavigateToTasks, onNavigateToSafety, onNavigateToTraining
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-orange-400" />
-                <h2 className="text-xl font-semibold text-white">Instructor Booking</h2>
+                <h2 className="text-xl font-semibold text-white"> Proximity Analysis</h2>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
             </div>
 
             <div className="text-center mb-6">
-              <div className="text-gray-300 mb-4">Need personalized training?</div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Proximity Distance</span>
+                <span className="text-green-400 font-medium">{proximityData.proximity_distance_m}</span>
+              </div>
+                <br />
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Direction</span>
+                <span className="text-green-400 font-medium">{proximityData.direction}</span>
+              </div>
+                <br />
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Danger Level</span>
+                <span className="text-green-400 font-medium">{proximityData.danger_level}</span>
+              </div>
+                  <br />
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Proximity Level</span>
+                <span className="text-green-400 font-medium">{proximityData.proximity_alert_triggered ? 'Yes' : 'No'}</span>
+              </div>
+
+              <div className='bg-red-700 text-white rounded-xl p-4 w-fit shadow-lg ml-24 mt-7'>
+                <div className="text-sm uppercase font-semibold tracking-wide mb-1">{proximityData.message || 'No current alert'}t</div>
+              </div>
+              
             </div>
 
-            <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 mb-4">
-              <Calendar className="w-5 h-5" />
-              Request Session
-            </button>
 
-            <div className="text-center text-orange-400 text-sm">
-              Book one-on-one sessions with certified instructors
-            </div>
           </div>
 
         </div>
