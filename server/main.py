@@ -15,7 +15,8 @@ CORS(app,
 USERS = {
     "driver21": "password123",
     "driver22": "securepass456",
-    "admin": "adminpass789"
+    "admin": "adminpass789",
+    "21": "123"
 }
 
 latest_alert_text = {"message": ""}
@@ -271,6 +272,17 @@ def receive_task_data():
 def send_task_data():
     print("📤 Sending Task Data:", latest_task_prediction, flush=True)
     return jsonify(latest_task_prediction), 200
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     print("Starting Flask server on http://localhost:5000")

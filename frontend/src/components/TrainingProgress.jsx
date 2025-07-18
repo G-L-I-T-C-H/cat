@@ -17,6 +17,15 @@ const TrainingProgress = ({ onBack }) => {
 
   const categories = ['All Categories', 'Safety', 'Operations', 'Maintenance', 'Technical'];
 
+  const pdfList = [
+  { name: "CATERPILLAR 330D", url: "/pdfs/source1.pdf" },
+  { name: "CATERPILLAR 3500 SERIES 2", url: "/pdfs/source2.pdf" },
+  { name: "MINI HYDRAULIC EXCAVATORS", url: "/pdfs/source3.pdf" },
+  { name: "MINI HYDRAULIC EXCAVATORS VIDEO TUTORIAL", url: "https://www.youtube.com/watch?v=h_OR-D-uV0k" },
+  { name: "CAT336E EXCAVATOR VIDEO TUTORIAL", url: "https://www.youtube.com/watch?v=gVA_r_a44vQ" },
+
+];
+
   const trainingModules = [
     {
       id: 1,
@@ -249,11 +258,24 @@ const TrainingProgress = ({ onBack }) => {
                     </span>
                   )}
                 </div>
+
               </div>
             ))}
           </div>
         </div>
       </div>
+      <div className="mt-8">
+  <h2 className="text-lg font-semibold text-white mb-2">List of sources</h2>
+  <ul className="list-disc list-inside text-blue-400">
+    {pdfList.map((pdf, index) => (
+      <li key={index}>
+        <a href={pdf.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+          {pdf.name}
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>
     </div>
   );
 };

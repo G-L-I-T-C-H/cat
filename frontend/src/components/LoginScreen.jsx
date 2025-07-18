@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Shield } from 'lucide-react';
 
+import catLogo from '../assets/catLogo.jpeg'; // Adjust the path as necessary
+
 const LoginScreen = ({ onLogin }) => {
   const [driverId, setDriverId] = useState('');
   const [password, setPassword] = useState('');
@@ -35,15 +37,20 @@ const LoginScreen = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-gray-700 rounded-lg shadow-xl p-8 w-full max-w-md">
+        {/* Header with Shield Icon */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-500 rounded-full mb-4">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 ">
+            <img src={catLogo} alt="CAT Logo" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-200 mb-2">Construction Driver Portal</h1>
-          <p className="text-gray-400">Secure access to your driver assistance system</p>
+          <h1 className="text-2xl font-bold text-gray-200 mb-2">
+            Operator Login
+          </h1>
+          <p className="text-gray-400">
+            Secure access to your operator assistance system
+          </p>
         </div>
+
 
         {error && (
           <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
@@ -105,8 +112,9 @@ const LoginScreen = ({ onLogin }) => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
 export default LoginScreen;
+
+

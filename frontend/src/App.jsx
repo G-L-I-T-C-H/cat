@@ -11,8 +11,10 @@ import TrainingProgress from './components/TrainingProgress'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('login') // 'login', 'dashboard', 'tasks', 'safety'
+  const [driverId, setDriverId] = useState(null)
 
-  const handleLogin = () => {
+  const handleLogin = (driverId) => {
+    setDriverId(driverId);
     setCurrentPage('dashboard')
   }
 
@@ -33,6 +35,7 @@ function App() {
   }
 
   const handleLogout = () => {
+    setDriverId(null)
     setCurrentPage('login')
   }
 
@@ -43,6 +46,7 @@ function App() {
       )}
       {currentPage === 'dashboard' && (
         <Dashboard 
+          driverId={driverId}
           onNavigateToTasks={handleNavigateToTasks}
           onNavigateToSafety={handleNavigateToSafety}
           onNavigateToTraining={handleNavigateToTraining}

@@ -3,10 +3,35 @@ import axios from 'axios';
 import { 
   Activity, Clock, Shield, GraduationCap, Calendar,
   ChevronRight, AlertTriangle, Thermometer,
-  Scale, Zap, User
+  Scale, Zap, User, Radar
 } from 'lucide-react';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
-const Dashboard = ({ onNavigateToTasks, onNavigateToSafety, onNavigateToTraining }) => {
+const Dashboard = ({ driverId, onNavigateToTasks, onNavigateToSafety, onNavigateToTraining }) => {
+
+
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+const [aiQuery, setAiQuery] = useState("");
+
+const handleVoiceInput = () => {
+  const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = 'en-US';
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    setAiQuery(transcript);
+  };
+
+  recognition.onerror = function(event) {
+    console.error("Speech recognition error", event);
+  };
+
+  recognition.start();
+};
+
+  const [remainingMinutes, setRemainingMinutes] = useState(null);
+
+
   const [fatigueAlert, setFatigueAlert] = useState('');
   const [machineParams, setMachineParams] = useState({
     Fuel_Pressure: null,
@@ -155,6 +180,8 @@ const [proximityData, setProximityData] = useState({
         const data = await response.json();
         console.log("📥 Received Task Data:", data);
         setTaskData(data);
+        setRemainingMinutes(parseInt(data.projected_minutes)); // Initialize countdown
+
       } catch (error) {
         console.error("❌ Error fetching task data:", error);
       }
@@ -166,25 +193,99 @@ const [proximityData, setProximityData] = useState({
     return () => clearInterval(interval); // cleanup on unmount
   }, []);
 
+  useEffect(() => {
+  if (remainingMinutes === null) return;
+  if (remainingMinutes <= 0) return;
+
+  const interval = setInterval(() => {
+    setRemainingMinutes(prev => {
+      if (prev > 0) {
+        return prev - 1;
+      } else {
+        clearInterval(interval);
+        return 0;
+      }
+    });
+  }, 60000); // 60,000 ms = 1 minute
+
+  return () => clearInterval(interval);
+}, [remainingMinutes]);
+
+console.log("⏳ Remaining Minutes:", remainingMinutes);
+console.log("🗓️ Projected Minutes from Task Data:", taskData.projected_minutes);
   return (
-    <div className="min-h-screen bg-gray-800 p-4">
+    <div className="min-h-screen p-4" style={{ backgroundColor: '#54535340' }}>
+
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Welcome Header */}
-        <div className="bg-orange-400 rounded-lg p-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Welcome back, Driver 21!</h1>
+        <div className=" flex justify-between items-center">
+          <div  style={{ backgroundColor: '#FFB500' }} className="rounded-lg p-6">
+            <h2 className="text-4xl font-bold text-gray-800">Welcome back, Operator {driverId}</h2>
             <p className="text-gray-700 mt-1">Ready to start your shift? Here's your overview for today.</p>
           </div>
-          <div className="bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+          <div className="text-white px-4 py-2 rounded-lg flex items-center gap-2">
             <User className="w-4 h-4" />
-            <span>Driver 21</span>
+            <span>{driverId}</span>
             <span className="ml-4">{currentTime}</span>
           </div>
+
+         <button
+              onClick={() => setIsAIModalOpen(true)}
+            className="bg-green-600 text-green-100 px-3 py-1 rounded-full text-xs font-medium"
+          >
+           AI
+          </button>
+
+
         </div>
 
+        {isAIModalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg w-full max-w-md">
+      <h2 className="text-lg font-bold mb-4 text-gray-800">Ask AI Insights</h2>
+      <textarea
+        rows={4}
+        value={aiQuery}
+        onChange={(e) => setAiQuery(e.target.value)}
+        placeholder="Type your question here..."
+        className="w-full border border-gray-300 p-2 rounded resize-none"
+      />
+      <div className="flex justify-between items-center mt-4">
+        <button
+          onClick={handleVoiceInput}
+          className="flex items-center gap-2 text-white font-medium"
+        >
+          🎤 Mic
+        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              // You can later call your AI API here with aiQuery
+              console.log("User asked:", aiQuery);
+              setIsAIModalOpen(false);
+              setAiQuery("");
+            }}
+            className="bg-green-600 text-white px-4 py-1 rounded"
+          >
+            Ask
+          </button>
+          <button
+            onClick={() => setIsAIModalOpen(false)}
+            className="bg-gray-300 px-4 py-1 rounded text-white"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+        
+
         {/* Machine Operating Status */}
-        <div className="bg-gray-700 rounded-lg p-6">
+        <div className="bg-gray-800 rounded-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-orange-400" />
@@ -195,14 +296,14 @@ const [proximityData, setProximityData] = useState({
 
           <p className="text-gray-300 mb-4">Real-time monitoring of critical machine parameters</p>
 
-          <div className="bg-yellow-600 text-yellow-100 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+          <div className="bg-yellow-800 text-yellow-100 px-4 py-3 rounded-lg mb-6 flex items-center gap-2 w-fit">
             <AlertTriangle className="w-5 h-5" />
             <span>1 parameter(s) require attention</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Hydraulic Pressure */}
-            <div className="bg-gray-600 rounded-lg p-4 text-center">
+            <div className="bg-gray-700 rounded-lg p-4 text-center">
               <div className="w-12 h-12 bg-gray-500 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Activity className="w-6 h-6 text-gray-300" />
               </div>
@@ -216,7 +317,7 @@ const [proximityData, setProximityData] = useState({
             </div>
 
             {/* Trans Oil Temp */}
-            <div className="bg-gray-600 rounded-lg p-4 text-center">
+            <div className="bg-gray-700 rounded-lg p-4 text-center">
               <div className="w-12 h-12 bg-gray-500 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Thermometer className="w-6 h-6 text-gray-300" />
               </div>
@@ -230,7 +331,7 @@ const [proximityData, setProximityData] = useState({
             </div>
 
             {/* Fuel Pressure */}
-            <div className="bg-gray-600 rounded-lg p-4 text-center">
+            <div className="bg-gray-700 rounded-lg p-4 text-center">
               <div className="w-12 h-12 bg-gray-500 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Scale className="w-6 h-6 text-gray-300" />
               </div>
@@ -244,7 +345,7 @@ const [proximityData, setProximityData] = useState({
             </div>
 
             {/* Exhaust Temperature */}
-            <div className="bg-gray-600 rounded-lg p-4 text-center">
+            <div className="bg-gray-700 rounded-lg p-4 text-center">
               <div className="w-12 h-12 bg-gray-500 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Zap className="w-6 h-6 text-gray-300" />
               </div>
@@ -263,18 +364,20 @@ const [proximityData, setProximityData] = useState({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Task Overview */}
-          <div className="bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-colors" onClick={onNavigateToTasks}>
+          <div className="bg-gray-800 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-colors" onClick={onNavigateToTasks}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-blue-400" />
-                <h2 className="text-xl font-semibold text-white">{taskData.projected_minutes}</h2>
-              </div>
+                <h2 className="text-xl font-semibold text-white">
+  {Number.isFinite(remainingMinutes) ? remainingMinutes : taskData.projected_minutes}
+</h2>
+</div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </div>
 
             <div className="text-center mb-6">
               <div className="text-4xl font-bold text-blue-400 mb-2">{taskData.predicted_task_complexity}</div>
-              <div className="text-gray-300">Predicted Tsak Complexity</div>
+              <div className="text-gray-300">Predicted Task Complexity</div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -295,7 +398,7 @@ const [proximityData, setProximityData] = useState({
           </div>
 
           {/* Safety Overview */}
-          <div className="bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-colors" onClick={onNavigateToSafety}>
+          <div className="bg-gray-800 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-colors" onClick={onNavigateToSafety}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-green-400" />
@@ -346,7 +449,7 @@ const [proximityData, setProximityData] = useState({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Training Hub */}
-          <div className="bg-gray-700 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-colors" onClick={onNavigateToTraining}>
+          <div className="bg-gray-800 rounded-lg p-6 cursor-pointer hover:bg-gray-600 transition-colors" onClick={onNavigateToTraining}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <GraduationCap className="w-5 h-5 text-purple-400" />
@@ -371,10 +474,10 @@ const [proximityData, setProximityData] = useState({
           </div>
 
           {/* Instructor Booking */}
-          <div className="bg-gray-700 rounded-lg p-6">
+          <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-orange-400" />
+                <Radar className="w-5 h-5 text-blue-400" />
                 <h2 className="text-xl font-semibold text-white"> Proximity Analysis</h2>
               </div>
             </div>
@@ -416,3 +519,9 @@ const [proximityData, setProximityData] = useState({
 };
 
 export default Dashboard;
+
+
+
+
+// if (remainingMinutes === null)
+//   setRemainingMinutes(parseInt(data.projected_minutes));

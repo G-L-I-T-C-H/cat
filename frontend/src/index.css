@@ -68,3 +68,59 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Clean up Google Translate dropdown */
+#google_translate_element {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 9999;
+  font-family: sans-serif;
+  background-color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+
+body {
+  top: 0px !important;
+}
+
+/* Hide the ugly Google Translate toolbar */
+.goog-logo-link, .goog-te-gadget span {
+  display: none !important;
+}
+.goog-te-gadget {
+  color: transparent !important;
+}
+
+/* Hide the Google Translate branding border */
+.goog-te-gadget {
+  font-size: 0px !important; /* hide extra text */
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Remove Google logo and text */
+.goog-logo-link,
+.goog-te-gadget span {
+  display: none !important;
+}
+
+/* Clean select dropdown */
+.goog-te-combo {
+  .goog-te-combo {
+  border: none;
+  box-shadow: none;
+  background-color: transparent;
+}
+}
+
+
